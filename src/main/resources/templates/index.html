@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Grafana聚合导航</title>
+    <meta charset="utf-8">
+    <link rel="icon" href="grafana/img/grafana_icon.svg" sizes="50x50">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="grafana/layui/css/layui.css" rel="stylesheet">
+</head>
+<style>
+    body {
+        margin: 1px;
+        background: linear-gradient(to bottom, #583065, #150c25);
+        background-size: 100% 100%;
+        animation: dynamics 15s ease infinite;
+        -webkit-animation: dynamics 15s ease infinite;
+        -moz-animation: dynamics 15s ease infinite;
+        font-size: 10px;
+        color: #ffffff;
+        min-height: 700px;
+        overflow: hidden;
+    }
+
+    .main {
+        position: absolute;
+        margin-top: 10px;
+        margin-left: 10px;
+        width: 99.5%;
+        height: 100%;
+        overflow: auto;
+        z-index: 1; /* div堆叠，设置当前div在第几层*/
+    }
+
+    @keyframes dynamics {
+        0% {
+            background-position: 0% 0%;
+        }
+        50% {
+            background-position: 50% 100%;
+        }
+        100% {
+            background-position: 100% 0%;
+        }
+    }
+
+    .card {
+        margin-top: 3px;
+        margin-bottom: 5px;
+        margin-left: 5px;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+        width: 10%;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 16px 0 rgba(251, 251, 251, 0.2);
+    }
+
+    .container {
+        padding: 2px 16px;
+    }
+</style>
+<body>
+<script src="grafana/layui/layui.js"></script>
+<script>
+    layui.use('layer', function () {
+        var layer = layui.layer;
+        var util = layui.util;
+        var tipIndex;
+        openAlertTip = function (data, id) {
+            var msg = '';
+            for (var i = 0; i < data.length; i++) {
+                var color = '#5FB878'
+                if (data[i].state == 'no_data' || data[i].state == 'alerting') {
+                    color = '#FF5722'
+                } else if (data[i].state == 'pending') {
+                    color = '#FFB800'
+                } else if (data[i].state == 'paused') {
+                    color = '#dddddd'
+                }
+                msg += "<li><i class='layui-icon layui-icon-heart-fill' style='font-size: 15px; color: " + color + ";'></i>&nbsp;<font style='color:#eeeeee;'>" + data[i].name + "</font><font style='color:" + color + ";'>&nbsp;&nbsp;" + data[i].state + "</font></li>"
+            }
+            tipIndex = layer.tips(msg, '#' + id, {
+                tips: 1
+            });
+        }
+        closeAlertTip = function () {
+            layer.close(tipIndex)
+        }
+        deleteById = function (data) {
+            layer.alert(data, {
+                title: '当前填写的字段值'
+            });
+        }
+        form.on('submit(addHost)', function (data) {
+            var field = data.field; // 获取表单字段值
+            // 显示填写结果，仅作演示用
+            layer.alert(JSON.stringify(field), {
+                title: '当前填写的字段值'
+            });
+            return false; // 阻止默认 form 跳转
+        });
+    });
+</script>
+<div class="main">
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">Dashboard</li>
+            <li>Config</li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <div th:unless="${#lists.isEmpty(prometheusList)}" style="margin-top:5px;">
+				<span th:each="prometheus:${prometheusList}">
+					<img src="grafana/img/prometheus.png" style="width:20px;vertical-align: inherit;"/>
+					<span class="layui-badge-dot layui-bg-green"></span>
+					<span>[[${prometheus.address}]]&nbsp;&nbsp;</span>
+					<span>([[${prometheus.version}]])&nbsp;</span>
+					<span>Job up：<font style="color:#19be6b" th:text="${prometheus.upCount}"></font>&nbsp;</span>
+					<span>Job down：<font style="color:#ed4014" th:text="${prometheus.downCount}"></font>&nbsp;</span>
+					<span>指标总数：[[${prometheus.tsdbHeadStats.numSeries}]]&nbsp;&nbsp;</span>
+				</span>
+                </div>
+                <div th:unless="${#lists.isEmpty(grafanaList)}">
+                    <div th:each="grafana:${grafanaList}" style="margin-top:20px;">
+                        <div><img src="grafana/img/grafana_icon.svg" alt="Avatar"
+                                  style="width:30px;vertical-align: inherit;"/>&nbsp;&nbsp;<font
+                                style="font-size:35px;font-weight:bold;color:#b877d9">[[${grafana.name}]]</font></div>
+                        版本：<span th:text="${grafana.version}"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        地址：<a th:href="${grafana.proxyAddress}" target="_blank" th:text="${grafana.proxyAddress}"
+                              style="color:#ff9830"></a>&nbsp;&nbsp;&nbsp;&nbsp;
+                        Dashboard数量：<span style="font-size:20px;color:#5794f2"
+                                          th:text="${grafana.dashboardCount}"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        告警正常数：<span style="color:#19be6b;font-size:20px" th:text="${grafana.alertOkCount}"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        告警异常数：<span style="color:#ed4014;font-size:20px" th:text="${grafana.alertNotOkCount}"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        告警暂停数：<span style="color:#bec8c8;font-size:20px" th:text="${grafana.alertPauseCount}"></span>&nbsp;&nbsp;&nbsp;&nbsp;
+                        <div th:each="folder:${grafana.folderList}" style="margin-top:10px;">
+                            <div th:text="${folder.title}" style="font-size:20px;font-weight:bold;"></div>
+                            <div style="margin-left:25px;">
+                                <div class="card" th:each="dashboard:${folder.dashboardList}">
+                                    <div class="container">
+                                        <h4><b>[[${dashboard.title}]]</b></h4>
+                                        <div th:unless="${#lists.isEmpty(dashboard.tags)}">
+							<span th:each="tag:${dashboard.tags}">
+								<span class="layui-badge layui-bg-orange" style="margin-top:2px;">[[${tag}]]</span>
+							</span>
+                                        </div>
+                                        <a th:href="${dashboard.url}" target="_blank" style="color:#ff9830"><i
+                                                class="layui-icon layui-icon-chart"
+                                                style="font-size: 25px; color: #1E9FFF;"></i></a>
+                                        <i th:id="${grafana.uid}+'-'+${dashboard.uid}"
+                                           class="layui-icon layui-icon-heart-fill alertTips"
+                                           th:onmouseover="openAlertTip([[${dashboard.alertList}]],[[${grafana.uid}]]+'-'+[[${dashboard.uid}]]);"
+                                           onmouseout="closeAlertTip();" style="font-size: 20px; color: #5FB878;"
+                                           th:if="${dashboard.mostSeriousAlertState}=='ok'"></i>
+                                        <i th:id="${grafana.uid}+'-'+${dashboard.uid}"
+                                           class="layui-icon layui-icon-heart-fill alertTips"
+                                           th:onmouseover="openAlertTip([[${dashboard.alertList}]],[[${grafana.uid}]]+'-'+[[${dashboard.uid}]]);"
+                                           onmouseout="closeAlertTip()" style="font-size: 20px; color: #FF5722;"
+                                           th:if="${dashboard.mostSeriousAlertState}=='not_ok'"></i>
+                                        <i th:id="${grafana.uid}+'-'+${dashboard.uid}"
+                                           class="layui-icon layui-icon-heart-fill alertTips"
+                                           th:onmouseover="openAlertTip([[${dashboard.alertList}]],[[${grafana.uid}]]+'-'+[[${dashboard.uid}]]);"
+                                           onmouseout="closeAlertTip()" style="font-size: 20px; color: #C2C2C2;"
+                                           th:if="${dashboard.mostSeriousAlertState}=='pause'"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--			<hr class="layui-border-green">-->
+                    </div>
+                </div>
+            </div>
+            <div class="layui-tab-item">
+                <form class="layui-form" action="/add">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">host</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="address" autocomplete="off" placeholder="请输入"
+                                       lay-verify="required" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">description</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="desc" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">type</label>
+                            <div class="layui-input-block">
+                                <input type="radio" name="type" value="Grafana" title="Grafana" checked>
+                                <input type="radio" name="type" value="Prometheus" title="Prometheus">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn layui-btn-xs layui-btn-normal" lay-submit lay-filter="addHost">Add
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <table class="layui-table" style="background-color: transparent">
+                    <colgroup>
+                        <col width="100">
+                        <col width="250">
+                        <col width="250">
+                        <col width="250">
+                        <col width="250">
+                    </colgroup>
+                    <thead>
+                    <tr style="background-color: transparent">
+                        <th><span style="color:#3cff3b">ID</span></th>
+                        <th><span style="color:#3cff3b">Server</span></th>
+                        <th><span style="color:#3cff3b">Type</span></th>
+                        <th><span style="color:#3cff3b">Description</span></th>
+                        <th><span style="color:#3cff3b">operate</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="host:${hostList}">
+                        <td>
+                            <span style="color:#e2a84d" th:text="${host.id}"></span>
+                        </td>
+                        <td>
+                            <span style="color:#e2a84d" th:text="${host.address}"></span>
+                        </td>
+                        <td>
+                            <span style="color:#e2a84d" th:text="${host.type}"></span>
+                        </td>
+                        <td>
+                            <span style="color:#e2a84d" th:text="${host.desc}"></span>
+                        </td>
+                        <td>
+                            <a class="layui-btn layui-btn-xs" th:href="@{/del/{id}(id=${host.id})}">delete
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="grafana/jquery.js"></script>
+<script src="grafana/three.min.js"></script>
+<script>
+
+    var SEPARATION = 100, AMOUNTX = 60, AMOUNTY = 40;
+    var container;
+    var camera, scene, renderer;
+    var particles, particle, count = 0;
+    var mouseX = 0, mouseY = 0;
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+
+    $(function () {
+        init();		//初始化
+        animate();	//动画效果
+    });
+
+    //初始化
+    function init() {
+
+        container = document.createElement('div');	//创建容器
+        container.setAttribute("style", "opacity: 0.5");
+        document.body.appendChild(container);			//将容器添加到页面上
+        camera = new THREE.PerspectiveCamera(120, window.innerWidth / window.innerHeight, 1, 1500);		//创建透视相机设置相机角度大小等
+        camera.position.set(0, 450, 2000);		//设置相机位置
+
+        scene = new THREE.Scene();			//创建场景
+        particles = new Array();
+
+        var PI2 = Math.PI * 2;
+        //设置粒子的大小，颜色位置等
+        var material = new THREE.ParticleCanvasMaterial({
+            color: 0x0f96ff,
+            vertexColors: true,
+            size: 4,
+            program: function (context) {
+                context.beginPath();
+                context.arc(0, 0, 0.01, 0, PI2, true);	//画一个圆形。此处可修改大小。
+                context.fill();
+            }
+        });
+        //设置长条粒子的大小颜色长度等
+        var materialY = new THREE.ParticleCanvasMaterial({
+            color: 0xffffff,
+            vertexColors: true,
+            size: 1,
+            program: function (context) {
+
+                context.beginPath();
+                //绘制渐变色的矩形
+                var lGrd = context.createLinearGradient(-0.008, 0.25, 0.016, -0.25);
+                lGrd.addColorStop(0, '#FFF100');
+                lGrd.addColorStop(1, '#F05A28');
+                context.fillStyle = lGrd;
+                context.fillRect(-0.008, 0.25, 0.016, -0.25);  //注意此处的坐标大小
+                //绘制底部和顶部圆圈
+                context.fillStyle = "#0090ff";
+                context.arc(0, 0, 0.008, 0, PI2, true);    //绘制底部圆圈
+                context.fillStyle = "#16eff7";
+                context.arc(0, 0.25, 0.008, 0, PI2, true);    //绘制顶部圆圈
+                context.fill();
+                context.closePath();
+                //绘制顶部渐变色光圈
+                var rGrd = context.createRadialGradient(0, 0.25, 0, 0, 0.25, 0.025);
+                rGrd.addColorStop(0, 'transparent');
+                rGrd.addColorStop(1, '#16eff7');
+                context.fillStyle = rGrd;
+                context.arc(0, 0.25, 0.025, 0, PI2, true);    //绘制一个圆圈
+                context.fill();
+
+            }
+        });
+
+        //循环判断创建随机数选择创建粒子或者粒子条
+        var i = 0;
+        for (var ix = 0; ix < AMOUNTX; ix++) {
+            for (var iy = 0; iy < AMOUNTY; iy++) {
+                var num = Math.random() - 0.1;
+                if (num > 0) {
+                    particle = particles[i++] = new THREE.Particle(material);
+                    console.log("material")
+                } else {
+                    particle = particles[i++] = new THREE.Particle(materialY);
+                    console.log("materialY")
+                }
+                //particle = particles[ i ++ ] = new THREE.Particle( material );
+                particle.position.x = ix * SEPARATION - ((AMOUNTX * SEPARATION) / 2);
+                particle.position.z = iy * SEPARATION - ((AMOUNTY * SEPARATION) / 2);
+                scene.add(particle);
+            }
+        }
+
+        renderer = new THREE.CanvasRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    //浏览器大小改变时重新渲染
+    function onWindowResize() {
+        windowHalfX = window.innerWidth / 2;
+        windowHalfY = window.innerHeight / 2;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+    }
+
+    //将相机和场景渲染到页面上
+    function render() {
+        var i = 0;
+        //更新粒子的位置和大小
+        for (var ix = 0; ix < AMOUNTX; ix++) {
+            for (var iy = 0; iy < AMOUNTY; iy++) {
+                particle = particles[i++];
+                //更新粒子位置
+                particle.position.y = (Math.sin((ix + count) * 0.3) * 50) + (Math.sin((iy + count) * 0.5) * 50);
+                //更新粒子大小
+                particle.scale.x = particle.scale.y = particle.scale.z = ((Math.sin((ix + count) * 0.3) + 1) * 4 + (Math.sin((iy + count) * 0.5) + 1) * 4) * 50;	//正常情况下再放大100倍*1200
+            }
+        }
+
+        renderer.render(scene, camera);
+        count += 0.1;
+    }
+</script>
+</html>
